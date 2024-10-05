@@ -5,22 +5,18 @@ XueZhihuan's MyWebApp
 
 #### 软件架构
 软件架构说明
-
+- 根目录和backend文件夹是Flask的后端
+- frontend文件夹是React的前端
 
 #### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1.  在根目录运行python my_app.py可以启动后端
+2.  在frontend文件夹运行npm run start启动前端网页
+3.  在前端网页上进行产品功能的使用
 
 #### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1.  外汇周报的撰写
 
 #### 参与贡献
-
 1.  Fork 本仓库
 2.  新建 Feat_xxx 分支
 3.  提交代码
@@ -28,7 +24,6 @@ XueZhihuan's MyWebApp
 
 
 #### 特技
-
 1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
 2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
 3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
