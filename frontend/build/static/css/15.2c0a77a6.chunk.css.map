@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack://src/pages/Media/VideoPlayer/VideoPlayer.css"],"names":[],"mappings":"AAAA,mBACI,SAAU,CACV,aACJ","file":"15.2c0a77a6.chunk.css","sourcesContent":["div.GriffithPlayer {\r\n    width: 50%;\r\n    margin: 0 auto;\r\n}"]}

@@ -1,0 +1,2 @@
+(this.webpackJsonpfrontend=this.webpackJsonpfrontend||[]).push([[25],{424:function(t,e,n){"use strict";n.r(e);var r=n(34),c=n(41),i=n(43),a=n(42),o=n(0),u=n(6),s=function(t){Object(i.a)(n,t);var e=Object(a.a)(n);function n(){return Object(r.a)(this,n),e.apply(this,arguments)}return Object(c.a)(n,[{key:"render",value:function(){return Object(u.jsx)("div",{children:"Welcome to Digital Currency!"})}}]),n}(o.Component);e.default=s}}]);
+//# sourceMappingURL=25.7efe9264.chunk.js.map

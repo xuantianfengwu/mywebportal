@@ -1,0 +1,13 @@
+div.picturetools {
+    text-align: left;
+}
+
+div.letter_rec_tool > div.upload_area {
+    width: 20%;
+    min-height: 100px;
+}
+
+div.letter_rec_tool > div.display_area {
+    width: 20%;
+    background-color: pink
+}

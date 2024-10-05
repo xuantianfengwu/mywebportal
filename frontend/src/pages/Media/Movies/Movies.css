@@ -1,0 +1,90 @@
+a {
+    color: inherit;
+}
+
+ul {
+    list-style:none;
+}
+
+.clearfix::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+div.main {
+    min-height: 400px;
+    background: lightgrey;
+
+    line-height: 1.5em;
+
+    color: #333;
+}
+
+div.main .nav {
+    background: #47464a;
+    color: #999;
+    font-size: 16px;
+
+    height:60px;
+    line-height:60px;
+
+    text-align: center;
+}
+
+div.main .nav a {
+    margin: 0 38px;
+}
+
+div.main .nav a:hover {
+    color: #fff;
+}
+
+div.main .nav a.select {
+    color: #ef4238;
+}
+
+div.main .container {
+    width: 1120px;
+    margin: 0 auto;
+}
+
+div.main .container .choose-area {
+    border: 1px solid #e5e5e5;
+    margin: 40px 0;
+    font-size: 14px;
+
+    line-height: 30px;
+}
+
+div.main .container .choose-area .choose-item {
+    margin: 1em 0;
+}
+
+div.main .container .choose-area .choose-item .left {
+    float: left;
+    width: 60px;
+    text-align: right;
+    color: #999;
+}
+
+div.main .container .choose-area .choose-item .right {
+    float: right;
+    width: 1050px;
+}
+
+div.main .container .choose-area .choose-item .right li {
+    float: left;
+    margin: 0 9px;
+    padding: 0 6px;
+}
+
+div.main .container .choose-area .choose-item .right li :hover {
+    color: #ef4238;
+}
+
+div.main .container .choose-area .choose-item .right li.select {
+    background: red;
+    color: #fff;
+    border-radius: 15px;
+}

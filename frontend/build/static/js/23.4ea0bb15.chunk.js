@@ -1,0 +1,2 @@
+(this.webpackJsonpfrontend=this.webpackJsonpfrontend||[]).push([[23],{427:function(t,n,e){"use strict";e.r(n);var r=e(34),i=e(41),c=e(43),o=e(42),u=e(0),a=e(6),s=function(t){Object(c.a)(e,t);var n=Object(o.a)(e);function e(){return Object(r.a)(this,e),n.apply(this,arguments)}return Object(i.a)(e,[{key:"render",value:function(){return Object(a.jsx)("div",{children:"The page you visit is not found!"})}}]),e}(u.Component);n.default=s}}]);
+//# sourceMappingURL=23.4ea0bb15.chunk.js.map

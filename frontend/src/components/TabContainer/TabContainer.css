@@ -1,0 +1,29 @@
+.TabList {
+    list-style: none;
+}
+
+.TabList-Item {
+    border-top-right-radius:8px;
+    float: left;
+    border: solid 1px #7EABCD;
+    background: #c5dbec;
+    padding: 5px;
+    font-weight: bold;
+    color: #ffffff;
+    margin: 1px;
+}
+.TabList-Item:hover{
+    cursor: pointer;
+}
+.TabList-Item.active{
+    background: #7EABCD;
+}
+
+.TabContent {
+    width: 100%;
+    height: 100%;
+}
+
+.TabContent-Item {
+    padding: 10px;
+}
