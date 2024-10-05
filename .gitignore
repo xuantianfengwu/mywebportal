@@ -1,0 +1,11 @@
+Games/
+
+# videos
+/frontend/src/videos
+/backend/static
+/backend/config
+/sqlite/*.db
+
+*.cpython-38.pyc
+*.cpython-37.pyc
+*.pyc
