@@ -125,6 +125,10 @@ class CloudhandsWeeklyReport(object):
     def crawl_forex_trend_summary(self):
         """ 爬取并保存外汇行情数据 """
         print('Start Crawl Forex Trend Summary Data...')
+        forex_trend_date = self._forex_trend_dates
+        m_start_date = forex_trend_date['l_mstart_dt']
+        w_start_date = forex_trend_date['l_wstart_dt']
+        end_date = forex_trend_date['l_wend_dt']
         try:
             # 1.Crawl from Trading View
             need_columns = ["name", "close", "change|1W", "change|1M"]
@@ -140,23 +144,17 @@ class CloudhandsWeeklyReport(object):
             data_df.columns = ['TICKER',  'LAST', '1W CHG %', '1M CHG %']
         except:
             # 2.Crawl from api.exchangerate.host
-            forex_trend_date = self._forex_trend_dates
-            m_start_date = forex_trend_date['l_mstart_dt']
-            w_start_date = forex_trend_date['l_wstart_dt']
-            end_date = forex_trend_date['l_wend_dt']
-
             data_df = pd.concat([
-                self.get_exchangerate_host_fx_data_df('EUR', 'USD', m_start_date, end_date),
-                self.get_exchangerate_host_fx_data_df('USD', 'JPY', m_start_date, end_date),
-                self.get_exchangerate_host_fx_data_df('GBP', 'USD', m_start_date, end_date),
-                self.get_exchangerate_host_fx_data_df('AUD', 'USD', m_start_date, end_date),
-                self.get_exchangerate_host_fx_data_df('USD', 'CAD', m_start_date, end_date),
-                self.get_exchangerate_host_fx_data_df('USD', 'CHF', m_start_date, end_date),
-                self.get_exchangerate_host_fx_data_df('NZD', 'USD', m_start_date, end_date),
-                self.get_exchangerate_host_fx_data_df('USD', 'CNY', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('EUR', 'USD', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('USD', 'JPY', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('GBP', 'USD', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('AUD', 'USD', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('USD', 'CAD', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('USD', 'CHF', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('NZD', 'USD', m_start_date, end_date),
+                self.get_apilayer_fx_data_df('USD', 'CNY', m_start_date, end_date),
             ], axis=0)
-            data_df['TICKER'] = ['EURUSD', 'USDJPY', 'GBPUSD', 'AUDUSD',
-                                 'USDCAD', 'USDCHF', 'NZDUSD', 'USDCNY']
+            data_df['TICKER'] = ['EURUSD', 'USDJPY', 'GBPUSD', 'AUDUSD','USDCAD', 'USDCHF', 'NZDUSD', 'USDCNY']
             data_df['LAST'] = data_df[end_date]
             data_df['1W CHG %'] = 100 * (data_df[end_date] / data_df[w_start_date] - 1)
             data_df['1M CHG %'] = 100 * (data_df[end_date] / data_df[m_start_date] - 1)
@@ -204,10 +202,9 @@ class CloudhandsWeeklyReport(object):
         data_df = self.filter_jin10_financial_data_df(data_df)
         # 保存Excel
         print('Start Save Data To Excel...')
-        writer = pd.ExcelWriter(os.path.join(self.crawl_file_dir, self.forex_future_data_event_file))
-        data_df.to_excel(writer, 'DATA', index=False)
-        event_df.to_excel(writer, 'EVENT', index=False)
-        writer.save()
+        with pd.ExcelWriter(os.path.join(self.crawl_file_dir, self.forex_future_data_event_file)) as writer:
+            data_df.to_excel(writer, 'DATA', index=False)
+            event_df.to_excel(writer, 'EVENT', index=False)
         return True
 
 
@@ -632,22 +629,6 @@ class CloudhandsWeeklyReport(object):
 
     def get_trading_view_trend_data_df(self, need_columns, filters):
         """ 获取Trading View的趋势数据 """
-        # 1. 从Vultr服务器获取数据
-        """
-        # Config加载url
-        cf = configparser.ConfigParser()
-        cf.read(os.path.join('.', 'backend', 'config', 'oversea_vps.ini'))
-        url = "http://{}:{}/data/trading_view".format(cf.get("vultr_jp_vps", "host"), cf.get("vultr_jp_vps", "port"))
-        # 根据fiters和need_columns拉取数据
-        data = {
-            'filters': str(filters),
-            'columns': str(need_columns)
-        }
-        resp = requests.post(url, data=data)
-        resp_json = resp.json()
-        df = pd.DataFrame([r['d'] for r in resp_json['data']], columns=need_columns)
-        
-        """
         # 2. 利用代理proxy获取数据
         url = 'https://scanner.tradingview.com/forex/scan'
         payload = {"filter": filters,
@@ -662,13 +643,22 @@ class CloudhandsWeeklyReport(object):
         df = pd.DataFrame([r['d'] for r in resp_json['data']], columns=need_columns)
         return df
 
-    def get_exchangerate_host_fx_data_df(self, base, out_curr, start_date, end_date):
+    # def get_exchangerate_host_fx_data_df(self, base, out_curr, start_date, end_date):
+    #     # api url for request
+    #     url = 'https://api.exchangerate.host/timeseries?base={0}&start_date={1}&end_date={2}&symbols={3}'.format(base,start_date,end_date,out_curr)
+    #     response = requests.get(url)
+    #     # retrive response in json format
+    #     data = response.json()
+    #     data_df = pd.DataFrame(data['rates'])
+    #     return data_df
+
+    def get_apilayer_fx_data_df(self, base, out_curr, start_date, end_date):
         # api url for request
-        url = 'https://api.exchangerate.host/timeseries?base={0}&start_date={1}&end_date={2}&symbols={3}'.format(base,start_date,end_date,out_curr)
-        response = requests.get(url)
-        # retrive response in json format
-        data = response.json()
-        data_df = pd.DataFrame(data['rates'])
+        url = f'http://api.apilayer.com/currency_data/timeframe?start_date={start_date}&end_date={end_date}&source={base}&currencies={out_curr}'
+        headers = {"apikey":'VwKulne8n3atHyIcfTNaer25a5QOKk7L'}
+        resp = requests.get(url, headers=headers)
+        data = resp.json()
+        data_df = pd.DataFrame(data['quotes'])
         return data_df
 
     def get_cftc_net_position_df(self):
