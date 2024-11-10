@@ -129,6 +129,10 @@ class CloudhandsWeeklyReport(object):
         m_start_date = forex_trend_date['l_mstart_dt']
         w_start_date = forex_trend_date['l_wstart_dt']
         end_date = forex_trend_date['l_wend_dt']
+        today_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        if end_date>today_date:
+            print('End date>today date, set it to today date.')
+            end_date=today_date
         try:
             # 1.Crawl from Trading View
             need_columns = ["name", "close", "change|1W", "change|1M"]
@@ -654,7 +658,7 @@ class CloudhandsWeeklyReport(object):
 
     def get_apilayer_fx_data_df(self, base, out_curr, start_date, end_date):
         # api url for request
-        url = f'http://api.apilayer.com/currency_data/timeframe?start_date={start_date}&end_date={end_date}&source={base}&currencies={out_curr}'
+        url = f'https://api.apilayer.com/currency_data/timeframe?start_date={start_date}&end_date={end_date}&source={base}&currencies={out_curr}'
         headers = {"apikey":'VwKulne8n3atHyIcfTNaer25a5QOKk7L'}
         resp = requests.get(url, headers=headers)
         data = resp.json()
