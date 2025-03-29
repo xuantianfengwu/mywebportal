@@ -132,7 +132,7 @@ class CloudhandsWeeklyReport(object):
         today_date = datetime.datetime.now().strftime('%Y-%m-%d')
         if end_date>today_date:
             print('End date>today date, set it to today date.')
-            end_date=today_date
+            end_date=today_date 
         try:
             # 1.Crawl from Trading View
             need_columns = ["name", "close", "change|1W", "change|1M"]
