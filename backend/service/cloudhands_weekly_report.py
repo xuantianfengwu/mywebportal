@@ -11,6 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from docxtpl import DocxTemplate, InlineImage
+import zhconv # Traditional Chinese Transform
 # for height and width you have to use millimeters (Mm), inches or points(Pt) class :
 from docx.shared import Pt
 from PIL import Image
@@ -93,6 +94,12 @@ class CloudhandsWeeklyReport(object):
             'l_mstart_dt': l_mstart_dt.strftime('%Y-%m-%d'),
             'l_wend_dt': l_wend_dt.strftime('%Y-%m-%d'),
         }
+
+    @staticmethod
+    def df_to_traditional(df):
+        traditional_df = df.applymap(lambda x: zhconv.convert(x, 'zh-hant') if isinstance(x, str) else x)
+        traditional_df.columns = [zhconv.convert(col, 'zh-hant') for col in df.columns]
+        return traditional_df
 
     @staticmethod
     def get_week_dates(week='next'):
@@ -230,6 +237,15 @@ class CloudhandsWeeklyReport(object):
         image_path = os.path.join(self.output_file_dir, self.forex_trend_summary_pic)
         fig.savefig(image_path)
         self.add_image_border(image_path, image_path, bc=(0, 100, 255), dst_w=960)
+        # 修改为繁体
+        data_df_traditional = self.df_to_traditional(trend_data)
+        # print(data_df_traditional)
+        fig, ax = self.render_forex_trend_table(data_df_traditional, cellLoc='left',
+                                                col_width=1.2, row_height=0.4, row_colors=['lightblue', 'w'],
+                                                dynamic_num_color_cols=[4, 5])
+        image_path = os.path.join(self.output_file_dir, 'fanti_'+self.forex_trend_summary_pic)
+        fig.savefig(image_path)
+        self.add_image_border(image_path, image_path, bc=(0, 100, 255), dst_w=960)
         # 返回结果
         res = {
             #'data_json_lst': forex_trend_summary_data.to_dict(orient='records'),
@@ -245,6 +261,13 @@ class CloudhandsWeeklyReport(object):
             # Figure
             fig, ax = self.get_picture_from_forex_position(data_df)
             img_path = os.path.join(self.output_file_dir, self.cftc_net_position_pic)
+            fig.savefig(img_path)
+            self.add_image_border(img_path, img_path, bc=(0, 100, 255), dst_w=960)
+            # 修改为繁体
+            data_df_traditional = self.df_to_traditional(data_df)
+            print(data_df_traditional)
+            fig, ax = self.get_picture_from_forex_position(data_df_traditional)
+            img_path = os.path.join(self.output_file_dir, 'fanti_'+self.cftc_net_position_pic)
             fig.savefig(img_path)
             self.add_image_border(img_path, img_path, bc=(0, 100, 255), dst_w=960)
             # Summary Text
@@ -296,6 +319,17 @@ class CloudhandsWeeklyReport(object):
                                                       row_height=0.4,
                                                       cellLoc='right')
         image_path = os.path.join(self.output_file_dir, '{}.png'.format(data_type))
+        fig.savefig(image_path)
+        self.add_image_border(image_path, image_path, bc=(0, 100, 255), dst_w=960)
+        # 修改为繁体
+        data_df_traditional = self.df_to_traditional(render_data_df)
+        # print(data_df_traditional)
+        fig, ax = self.render_future_data_event_table(data_df_traditional,
+                                                      colWidths=np.array([1.2, 0.8, 1, 1.5, 8.]),
+                                                      rowHeights=np.array(row_size_lst + [1]),
+                                                      row_height=0.4,
+                                                      cellLoc='right')
+        image_path = os.path.join(self.output_file_dir, f'fanti_{data_type}.png')
         fig.savefig(image_path)
         self.add_image_border(image_path, image_path, bc=(0, 100, 255), dst_w=960)
 
@@ -356,16 +390,15 @@ class CloudhandsWeeklyReport(object):
             'Picture_FutureEvent': InlineImage(tpl, future_event_png_path, width=Pt(400)),
         }
         tpl.render(context)
-        # 生成结果Word
+        # 生成简体Word + 生成PDF
         tpl.save(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']))
-        # 简体转繁体
-        DocxUtils().translate_to_traditional(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']),
-                                             os.path.join(self.output_file_dir, self.weekly_report_output['docx-ft'])
-                                             )
-        # 结果Wrod转PDF
         DocxUtils().docx_to_pdf(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']),
                                 os.path.join(self.output_file_dir, self.weekly_report_output['pdf-jt'])
                                 )
+        # Word简转繁 + 生成PDF
+        DocxUtils().translate_to_traditional(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']),
+                                             os.path.join(self.output_file_dir, self.weekly_report_output['docx-ft'])
+                                             )
         DocxUtils().docx_to_pdf(os.path.join(self.output_file_dir, self.weekly_report_output['docx-ft']),
                                 os.path.join(self.output_file_dir, self.weekly_report_output['pdf-ft'])
                                 )
@@ -850,10 +883,15 @@ class CloudhandsWeeklyReport(object):
 
     def get_picture_from_forex_position(self, data_df):
         """ 解析ForexPosition DataFrame，保存成图片 """
-        labels = data_df['货币'].tolist()
-        position_last_wk = data_df['上周净持仓'].astype(int)
-        position_this_wk = data_df['本周净持仓'].astype(int)
+        (curr, last_v, curr_v) = data_df.columns[:3]
+        labels = data_df[curr].tolist()
+        position_last_wk = data_df[last_v].astype(int)
+        position_this_wk = data_df[curr_v].astype(int)
         title = '截至上周二（{}）CFTC各货币期货净持仓变化'.format(data_df['report_date'][0])
+        ylabel = '持仓数（万手）'
+        if  curr != zhconv.convert(curr, 'zh-cn'): # 不是简体中文
+            title = zhconv.convert(title, 'zh-hant')
+            ylabel = zhconv.convert(ylabel, 'zh-hant')
 
         x = np.arange(len(labels))  # the label locations
         width = 0.35  # the width of the bars
@@ -865,7 +903,7 @@ class CloudhandsWeeklyReport(object):
         # Add title
         ax.set_title(title, fontsize=20)
         # Add Axis Labels
-        ax.set_ylabel('持仓数（万手）', fontsize=20)
+        ax.set_ylabel(ylabel, fontsize=20)
         # Add custom Axis-Tick Labels, etc.
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
@@ -910,13 +948,13 @@ class CloudhandsWeeklyReport(object):
         return True
 
 if __name__ == '__main__':
-    str_date = str(datetime.datetime.now())[:10]
+    str_date = '2025-05-05'
     print(str_date)
     report_generator = CloudhandsWeeklyReport(str_date)
 
     # report_generator.generate_forex_trend_summary()
 
-    report_generator.crawl_forex_trend_summary()
+    # report_generator.crawl_forex_trend_summary()
 
     # report_generator.crawl_forex_position_data()
     # report_generator.generate_forex_position_data()
@@ -924,7 +962,7 @@ if __name__ == '__main__':
     # report_generator.generate_major_currency_forecast()
 
     # #report_generator.crawl_forex_future_data_event()
-    # report_generator.generate_forex_future_data_event('DATA')
+    report_generator.generate_forex_future_data_event('DATA')
     # report_generator.generate_forex_future_data_event('EVENT')
 
     # report_generator.generate_output_files()
