@@ -390,7 +390,7 @@ class CloudhandsWeeklyReport(object):
             'Picture_FutureEvent': InlineImage(tpl, future_event_png_path, width=Pt(400)),
         }
         tpl.render(context)
-        # 生成简体Word + 生成PDF
+        # 生成简体cWord + 生成PDF
         tpl.save(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']))
         DocxUtils().docx_to_pdf(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']),
                                 os.path.join(self.output_file_dir, self.weekly_report_output['pdf-jt'])
