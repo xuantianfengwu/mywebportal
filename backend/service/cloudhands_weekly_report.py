@@ -17,7 +17,17 @@ from docx.shared import Pt
 from PIL import Image
 
 import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+import platform
+
+# 设置中文字体，添加多平台支持
+sys = platform.system()
+if sys.lower() == 'windows':
+    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
+elif sys.lower() == 'darwin':  # macOS
+    plt.rcParams['font.sans-serif'] = ['PingFang SC', 'Hiragino Sans GB', 'Heiti TC']
+else:  # Linux
+    plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'WenQuanYi Micro Hei']
+
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
 from ..utils.osfile_utils import OSFileUtils

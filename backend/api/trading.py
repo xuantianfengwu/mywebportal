@@ -9,10 +9,8 @@ import json
 import platform
 from ..utils.web_response import WebResponse
 from ..service.forex_trading_tools import ForexTradingTools
-# 只有Windows可用周报编写部分（要操作生成Word）
-sys = platform.system()
-if sys.lower()=='windows':
-    from ..service.cloudhands_weekly_report import CloudhandsWeeklyReport
+# 导入云核周报服务
+from ..service.cloudhands_weekly_report import CloudhandsWeeklyReport
 
 @trading_bp.route('/forex/data/save', methods=['GET','POST'])
 def save_forex_data():
@@ -161,4 +159,3 @@ def get_cloudhands_file():
         # return flask.send_from_directory(res['file_dir'], res['file_name'])
     else:
         return WebResponse.fail('文件不存在！')
-

@@ -5,9 +5,14 @@ from docxtpl import DocxTemplate, InlineImage
 from ..utils.osfile_utils import OSFileUtils
 import docx
 from zhconv import convert
-from win32com.client import Dispatch, constants, gencache
-import pythoncom
 import os
+import platform
+
+# 只有Windows系统才导入win32com相关模块
+sys = platform.system()
+if sys.lower() == 'windows':
+    from win32com.client import Dispatch, constants, gencache
+    import pythoncom
 
 class DocxUtils(object):
     """ 操作Word Docx的类 """
@@ -41,11 +46,14 @@ class DocxUtils(object):
 
     def docx_to_pdf(self, input_path, output_path):
         """ 将Word转化为PDF """
-        # gencache.EnsureModule('{00020905-0000-0000-C000-000000000046}', 0, 8, 4)
-        pythoncom.CoInitialize()
-        #w = Dispatch('Word.Application')
-        w = gencache.EnsureDispatch('Word.Application')
+        sys = platform.system()
+        if sys.lower() != 'windows':
+            print(f"docx_to_pdf function is only supported on Windows. Current system: {sys}")
+            return False
+            
         try:
+            pythoncom.CoInitialize()
+            w = gencache.EnsureDispatch('Word.Application')
             # 打开文件
             doc = w.Documents.Open(os.path.abspath(input_path), ReadOnly=1)
             # 转换文件
@@ -54,8 +62,7 @@ class DocxUtils(object):
                                     CreateBookmarks=constants.wdExportCreateHeadingBookmarks)
             return True
         except Exception as e:
-            print('e:', e)
-            print(constants.items())
+            print('Error converting docx to pdf:', e)
         finally:
             w.Quit(constants.wdDoNotSaveChanges)
 
