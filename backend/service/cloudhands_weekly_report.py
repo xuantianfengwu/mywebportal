@@ -6,6 +6,7 @@ import datetime
 import pandas as pd
 import numpy as np
 import json
+import time
 
 import requests
 from bs4 import BeautifulSoup
@@ -32,6 +33,14 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
 from ..utils.osfile_utils import OSFileUtils
 from ..utils.docx_utils import DocxUtils
+
+# 用于Selenium爬取的导入
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 class CloudhandsWeeklyReport(object):
     def __init__(self, week_start):
@@ -206,6 +215,28 @@ class CloudhandsWeeklyReport(object):
         """ 爬取 人民币套期保值 相关数据 """
         return True
 
+    # def crawl_forex_future_data_event(self):
+    #     """ 爬取并保存 财经数据&事件 数据 """
+    #     print('Start crawl_forex_future_data_event...')
+    #     # 获取爬取日期范围
+    #     y, m, d = self.week_start.split('-')
+    #     comp_week_start = '{}-{}-{}'.format(y, m.zfill(2), d.zfill(2))
+    #     week = 'this' if comp_week_start <= str(datetime.datetime.now())[:10] else 'next'
+    #     week_dates = self.get_week_dates(week)
+    #     # 爬取数据的DataFrame
+    #     print('Start Crawl From Website...{}-{}'.format(week_dates[0], week_dates[-1]))
+    #     data_df = self.get_future_data_event_df(week_dates, 'data', 3)
+    #     event_df = self.get_future_data_event_df(week_dates, 'event', 3)
+    #     # 筛取一部分财经数据，避免数量过多
+    #     print('Start Filter Necessary Financial Data...')
+    #     data_df = self.filter_jin10_financial_data_df(data_df)
+    #     # 保存Excel
+    #     print('Start Save Data To Excel...')
+    #     with pd.ExcelWriter(os.path.join(self.crawl_file_dir, self.forex_future_data_event_file)) as writer:
+    #         data_df.to_excel(writer, 'DATA', index=False)
+    #         event_df.to_excel(writer, 'EVENT', index=False)
+    #     return True
+
     def crawl_forex_future_data_event(self):
         """ 爬取并保存 财经数据&事件 数据 """
         print('Start crawl_forex_future_data_event...')
@@ -216,18 +247,17 @@ class CloudhandsWeeklyReport(object):
         week_dates = self.get_week_dates(week)
         # 爬取数据的DataFrame
         print('Start Crawl From Website...{}-{}'.format(week_dates[0], week_dates[-1]))
-        data_df = self.get_future_data_event_df(week_dates, 'data', 3)
-        event_df = self.get_future_data_event_df(week_dates, 'event', 3)
+        data_df, event_df = self.get_future_data_event_df_selenium(week_dates)
         # 筛取一部分财经数据，避免数量过多
         print('Start Filter Necessary Financial Data...')
         data_df = self.filter_jin10_financial_data_df(data_df)
         # 保存Excel
         print('Start Save Data To Excel...')
-        with pd.ExcelWriter(os.path.join(self.crawl_file_dir, self.forex_future_data_event_file)) as writer:
+        excel_path = os.path.join(self.crawl_file_dir, self.forex_future_data_event_file)
+        with pd.ExcelWriter(excel_path) as writer:
             data_df.to_excel(writer, 'DATA', index=False)
             event_df.to_excel(writer, 'EVENT', index=False)
         return True
-
 
     def generate_fundamental_event_data(self):
         data_df = pd.read_csv(os.path.join(self.crawl_file_dir, self.fund_event_summary_file))
@@ -845,7 +875,77 @@ class CloudhandsWeeklyReport(object):
             final_df = final_df[final_df['star'] >= level]
         return final_df
 
-    def get_jin10_financial_data_event_df(self, date, data_type):
+    def get_future_data_event_df_selenium(self, week_dates):
+        all_data_sources, all_event_sources = self.get_jin10_financial_data_event_sources_selenium(week_dates)
+        # 5. 解析页面数据
+        result_data = []  # 存储财经数据
+        for date_str, page_source in zip(week_dates, all_data_sources):
+            soup = BeautifulSoup(page_source, 'html.parser')
+            # 爬取财经数据（jinTable1）
+            for row in soup.select("#jinTable1 > div.jin-table-body__wrapper > div > div > div > div.jin-table-row"):
+                content = row.get_text(strip=True, separator='|')
+                result_data.append(f"{date_str}|{content}")
+        # 6. 处理财经数据
+        new_result_data = []
+        ts = ''  # 用于处理时间连续的情况
+        for r in result_data:
+            items = r.split('|')
+            if len(items) == 9:
+                if items[-5] != '视频解读':
+                    items = items[:len(items) - 4] + ['视频解读'] + items[-4:]
+            if len(items) == 10:
+                ts = items[1]
+            elif len(items) < 10:
+                items = items[:1] + [ts] + items[1:]
+            new_result_data.append('|'.join(items))
+        data_df = pd.DataFrame([r.split('|')[:3] for r in new_result_data], columns=['date', 'time', 'name'])
+        # 为data_df添加缺失列
+        data_df_columns = ['date', 'time', 'country', 'star', 'time_period', 'name']
+        for col in data_df_columns:
+            if col not in data_df.columns:
+                data_df[col] = ''
+        data_df = data_df[data_df_columns]  # 调整列顺序
+
+        result_event = []  # 存储财经事件
+        for date_str, page_source in zip(week_dates, all_event_sources):
+            soup = BeautifulSoup(page_source, 'html.parser')
+            # 爬取财经事件（jinTable2）
+            for row in soup.select("#jinTable2 > div.jin-table-body__wrapper > div > div.jin-table-row__group"):
+                content = row.get_text(strip=True, separator='|')
+                result_event.append(f"{date_str}|{content}")
+        # 7. 处理财经事件
+        event_records = []
+        for r in result_event:
+            items = r.split('|')
+            if len(items) >= 3:
+                date = items[0]
+                ts = items[1]
+                # 提取国家、星级、区域、人物、事件内容等信息
+                country = items[2] if len(items) > 2 else ''
+                star = len([c for c in items[2] if c == '★']) if len(items) > 2 else 0
+                event_content = items[3] if len(items) > 3 else ''
+                people = items[6] if len(items) > 4 else ''
+                region = ''
+                event_records.append({
+                    'date': date,
+                    'time': ts,
+                    'country': country,
+                    'star': star,
+                    'region': region,
+                    'people': people,
+                    'event_content': event_content.replace('。', '')
+                })
+        event_df = pd.DataFrame(event_records)
+        # 为event_df添加缺失列
+        event_df_columns = ['date', 'time', 'country', 'star', 'region', 'people', 'event_content']
+        for col in event_df_columns:
+            if col not in event_df.columns:
+                event_df[col] = ''
+        event_df = event_df[event_df_columns]  # 调整列顺序
+        return data_df, event_df
+
+    @staticmethod
+    def get_jin10_financial_data_event_df(date, data_type):
         """ 爬取金十数据的【财经数据与事件】 """
         if data_type == 'event':
             url = 'https://cdn-rili.jin10.com/data/{}/{}/event.json?'.format(date[:4], date[4:])
@@ -855,13 +955,89 @@ class CloudhandsWeeklyReport(object):
         resp_df = pd.DataFrame(resp.json())
         return resp_df
 
+    @staticmethod
+    def get_jin10_financial_data_event_sources_selenium(week_dates):
+        """ 使用Selenium爬取金十数据日历，获取财经数据和事件
+        参数:
+            week_dates: 日期列表，格式如 ['20260209', '20260210', ...]
+        返回:
+            data_df: 财经数据DataFrame
+            event_df: 财经事件DataFrame
+        """
+        # 1. 配置Chrome浏览器选项, 可以根据需要添加无头模式等选项
+        chrome_options = Options()
+        # chrome_options.add_argument("--headless=new")
+        # chrome_options.add_argument("--disable-gpu")
+
+        # 2. 初始化浏览器驱动
+        driver_path = ChromeDriverManager().install()
+        driver = webdriver.Chrome(
+            service=Service(driver_path),
+            options=chrome_options
+        )
+
+        first_date = week_dates[0]
+        url = f"https://rili.jin10.com/day/{first_date[:4]}-{first_date[4:6]}-{first_date[6:]}"
+        driver.get(url)
+        input('按Enter键继续爬取')
+
+        # 3. 爬取每个日期的财经数据
+        all_data_sources = []
+        countdown_text = ''  # 多久公布下一跳数据，用于侧面监测切换到新的日期页面了
+        weekday_btns = driver.find_elements(By.CSS_SELECTOR, "div.date-slider > ul > li")
+        for i, btn in enumerate(weekday_btns[:5]):
+            print(i + 1)
+            btn.click()
+            while True:
+                time.sleep(3)
+                countdown_items = driver.find_elements(By.CSS_SELECTOR,"div.countdown-line")
+                if len(countdown_items)>0:
+                    new_countdown_text = countdown_items[0].text
+                else:
+                    new_countdown_text = 'no data'
+                if countdown_text != new_countdown_text:
+                    all_data_sources.append(driver.page_source)
+                    countdown_text = new_countdown_text
+                    break
+        print(f"共爬取到{len(all_data_sources)}天的数据")
+        # 切换到【大事】Tab
+        elements = driver.find_elements(By.CSS_SELECTOR,
+                                        "div.index-page-header > div.index-page-header__left > div > div")
+        # target_element = elements[1]
+        target_element = next((el for el in elements if "大事" in el.text), None)
+        target_element.click()
+        time.sleep(3)
+        # 4.爬取每个日期的财经事件
+        all_event_sources = []
+        countdown_text = ''  # 多久公布下一跳数据，用于侧面监测切换到新的日期页面了
+        weekday_btns = driver.find_elements(By.CSS_SELECTOR, "div.date-slider > ul > li")
+        for i, btn in enumerate(weekday_btns[:5]):
+            print(i + 1)
+            btn.click()
+            while True:
+                time.sleep(3)
+                countdown_items = driver.find_elements(By.CSS_SELECTOR, "div.countdown-line")
+                if len(countdown_items)>0:
+                    new_countdown_text = countdown_items[0].text
+                else:
+                    new_countdown_text = 'no data'
+                if countdown_text != new_countdown_text or new_countdown_text == 'no data':
+                    all_event_sources.append(driver.page_source)
+                    countdown_text = new_countdown_text
+                    break
+        print(f"共爬取到{len(all_event_sources)}天的数据")
+
+        driver.quit()
+        return all_data_sources, all_event_sources
 
     def filter_jin10_financial_data_df(self, data_df):
         """ 按照列表筛取金十财经数据，避免数量过多 """
-        if os.path.exists(os.path.join(self.meta_data_dir, self.jin10_data_filter_file)):
-            filter_df = pd.read_excel(os.path.join(self.meta_data_dir, self.jin10_data_filter_file))
+        filter_file_path = os.path.join(self.meta_data_dir, self.jin10_data_filter_file)
+        if os.path.exists(filter_file_path):
+            filter_df = pd.read_excel(filter_file_path)
             q_data_names = set(filter_df[filter_df['is_store'] == 'Y']['数据类型'])
-            data_df = data_df[data_df['name'].isin(q_data_names)]
+            # data_df = data_df[data_df['name'].isin(q_data_names)]
+            data_df = data_df[data_df['name'].apply(lambda x: any(q in x for q in q_data_names))]
         return data_df
 
     def get_text_from_forex_position(self, data_df):
