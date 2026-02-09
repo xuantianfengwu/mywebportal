@@ -45,26 +45,36 @@ class DocxUtils(object):
         return True
 
     def docx_to_pdf(self, input_path, output_path):
-        """ 将Word转化为PDF """
+        """ 将Word转化为PDF（跨平台支持） """
         sys = platform.system()
-        if sys.lower() != 'windows':
-            print(f"docx_to_pdf function is only supported on Windows. Current system: {sys}")
-            return False
-            
+        
         try:
-            pythoncom.CoInitialize()
-            w = gencache.EnsureDispatch('Word.Application')
-            # 打开文件
-            doc = w.Documents.Open(os.path.abspath(input_path), ReadOnly=1)
-            # 转换文件
-            doc.ExportAsFixedFormat(os.path.abspath(output_path), constants.wdExportFormatPDF,
-                                    Item=constants.wdExportDocumentWithMarkup,
-                                    CreateBookmarks=constants.wdExportCreateHeadingBookmarks)
-            return True
+            if sys.lower() == 'windows':
+                # Windows系统使用原有方法
+                pythoncom.CoInitialize()
+                w = gencache.EnsureDispatch('Word.Application')
+                # 打开文件
+                doc = w.Documents.Open(os.path.abspath(input_path), ReadOnly=1)
+                # 转换文件
+                doc.ExportAsFixedFormat(os.path.abspath(output_path), constants.wdExportFormatPDF,
+                                        Item=constants.wdExportDocumentWithMarkup,
+                                        CreateBookmarks=constants.wdExportCreateHeadingBookmarks)
+                w.Quit(constants.wdDoNotSaveChanges)
+                return True
+            else:
+                # Mac或Linux系统
+                try:
+                    # 尝试使用python-docx2pdf库（推荐）
+                    from docx2pdf import convert
+                    convert(input_path, output_path)
+                    return True
+                except ImportError:
+                    # 如果没有安装python-docx2pdf，尝试使用系统命令
+                    print("python-docx2pdf not found")
+                    return False
         except Exception as e:
-            print('Error converting docx to pdf:', e)
-        finally:
-            w.Quit(constants.wdDoNotSaveChanges)
+            print(f'Error converting docx to pdf on {sys}:', e)
+            return False
 
     def replace_docx_tpl(self, input_path, output_path, context):
         """ 用docx-tpl包对word进行渲染 """
