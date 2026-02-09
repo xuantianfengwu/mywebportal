@@ -65,16 +65,19 @@ class CloudhandsWeeklyReport(object):
         # 2.爬取ForexTrendSummary【外汇期货合约走势】的Url
         self.forex_trend_summary_file = 'forex_trend_summary.csv'
         self.forex_trend_summary_pic = 'forex_trend_summary.png'
+        self.traditional_forex_trend_summary_pic = 'fanti_forex_trend_summary.png'
         # 3.爬取ForexPositionSummary【期货市场头寸分析】的Url
         self.display_curr_order = ['欧元', '澳元', '英镑', '日元', '加元', '纽元']
         self.cftc_net_position_file = 'cftc_net_position.csv'
         self.cftc_net_position_pic = 'cftc_net_position.png'
+        self.traditional_cftc_net_position_pic = 'fanti_cftc_net_position.png'
         # 4.爬取MajorCurrencyForecast【重点货币对展望】的Url
         self.major_currency_forecast_file = 'major_curr_forecast.json'
         # 5.爬取FutureDataEvent【后市观察指标】的Url
         self.jin10_data_filter_file = 'jin10_financial_data_list.xlsx'
         self.forex_future_data_event_file = 'future_data_event.xlsx'
         self.future_data_event_data_types = {'DATA': 'DATA.png', 'EVENT': 'EVENT.png'}
+        self.traditional_future_data_event_data_types = {'DATA': 'fanti_DATA.png', 'EVENT': 'fanti_EVENT.png'}
         # Output File的模板
         self.weekly_report_demo = 'Cloudhands Report Demo.docx'
         self.weekly_report_output = {
@@ -283,7 +286,7 @@ class CloudhandsWeeklyReport(object):
         fig, ax = self.render_forex_trend_table(data_df_traditional, cellLoc='left',
                                                 col_width=1.2, row_height=0.4, row_colors=['lightblue', 'w'],
                                                 dynamic_num_color_cols=[4, 5])
-        image_path = os.path.join(self.output_file_dir, 'fanti_'+self.forex_trend_summary_pic)
+        image_path = os.path.join(self.output_file_dir, self.traditional_forex_trend_summary_pic)
         fig.savefig(image_path)
         self.add_image_border(image_path, image_path, bc=(0, 100, 255), dst_w=960)
         # 返回结果
@@ -307,7 +310,7 @@ class CloudhandsWeeklyReport(object):
             data_df_traditional = self.df_to_traditional(data_df)
             print(data_df_traditional)
             fig, ax = self.get_picture_from_forex_position(data_df_traditional)
-            img_path = os.path.join(self.output_file_dir, 'fanti_'+self.cftc_net_position_pic)
+            img_path = os.path.join(self.output_file_dir, self.traditional_cftc_net_position_pic)
             fig.savefig(img_path)
             self.add_image_border(img_path, img_path, bc=(0, 100, 255), dst_w=960)
             # Summary Text
@@ -358,7 +361,7 @@ class CloudhandsWeeklyReport(object):
                                                       rowHeights=np.array(row_size_lst+[1]),
                                                       row_height=0.4,
                                                       cellLoc='right')
-        image_path = os.path.join(self.output_file_dir, '{}.png'.format(data_type))
+        image_path = os.path.join(self.output_file_dir, self.future_data_event_data_types[data_type])
         fig.savefig(image_path)
         self.add_image_border(image_path, image_path, bc=(0, 100, 255), dst_w=960)
         # 修改为繁体
@@ -369,7 +372,7 @@ class CloudhandsWeeklyReport(object):
                                                       rowHeights=np.array(row_size_lst + [1]),
                                                       row_height=0.4,
                                                       cellLoc='right')
-        image_path = os.path.join(self.output_file_dir, f'fanti_{data_type}.png')
+        image_path = os.path.join(self.output_file_dir, self.traditional_future_data_event_data_types[data_type])
         fig.savefig(image_path)
         self.add_image_border(image_path, image_path, bc=(0, 100, 255), dst_w=960)
 
@@ -435,8 +438,20 @@ class CloudhandsWeeklyReport(object):
         DocxUtils().docx_to_pdf(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']),
                                 os.path.join(self.output_file_dir, self.weekly_report_output['pdf-jt'])
                                 )
+        # 拼接繁体图片地址
+        tpl = DocxTemplate(word_tpl_path)
+        traditional_forex_trend_summary_png_path = os.path.join(self.output_file_dir, self.traditional_forex_trend_summary_pic)
+        traditional_cftc_net_position_png_path = os.path.join(self.output_file_dir, self.traditional_cftc_net_position_pic)
+        traditional_future_data_png_path = os.path.join(self.output_file_dir, self.traditional_future_data_event_data_types['DATA'])
+        traditional_future_event_png_path = os.path.join(self.output_file_dir, self.traditional_future_data_event_data_types['EVENT'])
+        context['Picture_Trend'] = InlineImage(tpl, traditional_forex_trend_summary_png_path, width=Pt(350))
+        context['Picture_Position'] = InlineImage(tpl, traditional_cftc_net_position_png_path, width=Pt(320))
+        context['Picture_FutureData'] = InlineImage(tpl, traditional_future_data_png_path, width=Pt(400))
+        context['Picture_FutureEvent'] = InlineImage(tpl, traditional_future_event_png_path, width=Pt(400))
+        tpl.render(context)
         # Word简转繁 + 生成PDF
-        DocxUtils().translate_to_traditional(os.path.join(self.output_file_dir, self.weekly_report_output['docx-jt']),
+        tpl.save(os.path.join(self.output_file_dir, self.weekly_report_output['docx-ft']))
+        DocxUtils().translate_to_traditional(os.path.join(self.output_file_dir, self.weekly_report_output['docx-ft']),
                                              os.path.join(self.output_file_dir, self.weekly_report_output['docx-ft'])
                                              )
         DocxUtils().docx_to_pdf(os.path.join(self.output_file_dir, self.weekly_report_output['docx-ft']),
