@@ -900,6 +900,7 @@ class CloudhandsWeeklyReport(object):
             for row in soup.select("#jinTable1 > div.jin-table-body__wrapper > div > div > div > div.jin-table-row"):
                 content = row.get_text(strip=True, separator='|')
                 result_data.append(f"{date_str}|{content}")
+        print(result_data)
         # 6. 处理财经数据
         new_result_data = []
         ts = ''  # 用于处理时间连续的情况
@@ -932,14 +933,16 @@ class CloudhandsWeeklyReport(object):
         event_records = []
         for r in result_event:
             items = r.split('|')
-            if len(items) >= 3:
+            if len(items) >= 10:  # 异常数据
+                continue
+            elif len(items) >= 3:
                 date = items[0]
                 ts = items[1]
                 # 提取国家、星级、区域、人物、事件内容等信息
                 country = items[2] if len(items) > 2 else ''
                 star = len([c for c in items[2] if c == '★']) if len(items) > 2 else 0
                 event_content = items[3] if len(items) > 3 else ''
-                people = items[6] if len(items) > 4 else ''
+                people = items[5] if len(items) > 4 else ''
                 region = ''
                 event_records.append({
                     'date': date,
