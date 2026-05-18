@@ -4,7 +4,8 @@
 from docxtpl import DocxTemplate, InlineImage
 from ..utils.osfile_utils import OSFileUtils
 import docx
-from zhconv import convert
+from opencc import OpenCC
+converter = OpenCC('s2t')  # 简体转繁体
 import os
 import platform
 
@@ -30,7 +31,7 @@ class DocxUtils(object):
                     if len(run.text.strip()) > 0:
                         ori_text = run.text
                         run.clear()
-                        run.add_text(convert(ori_text, 'zh-hk'))
+                        run.add_text(converter.convert(ori_text))
         # 表格
         for table in doc.tables:
             for cell in table._cells:
@@ -40,7 +41,7 @@ class DocxUtils(object):
                             if len(run.text.strip()) > 0:
                                 ori_text = run.text
                                 run.clear()
-                                run.add_text(convert(ori_text, 'zh-hk'))
+                                run.add_text(converter.convert(ori_text))
         doc.save(output_path)
         return True
 
