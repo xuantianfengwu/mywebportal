@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>{title}</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        .download-btn-container {{
+            position: fixed; top: 30px; right: 30px; z-index: 1000;
+            display: flex; gap: 16px;
+        }}
+        .download-btn {{
+            background: linear-gradient(135deg, #0f4168 0%, #1f6e9e 100%);
+            color: white; border: none; padding: 16px 32px; border-radius: 60px;
+            font-size: 24px; font-family: '微软雅黑', 'Microsoft YaHei', sans-serif;
+            font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s ease;
+        }}
+        .download-btn:hover {{ transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.25); }}
+        .download-btn:active {{ transform: translateY(0); }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            background: linear-gradient(145deg, #e2e9f2 0%, #d0dce8 100%);
+            display: flex; flex-direction: column; align-items: center;
+            font-family: '微软雅黑', 'Microsoft YaHei', sans-serif;
+            padding: 32px 24px;
+        }}
+        .schedule-container {{ max-width: 1800px; width: 100%; display: flex; flex-direction: column; gap: 48px; }}
+        .card {{
+            background: #ffffff; border-radius: 56px;
+            box-shadow: 0 32px 52px -20px rgba(0,0,0,0.3);
+            overflow: hidden; break-inside: avoid;
+        }}
+        .header {{
+            padding: 44px 48px 32px; border-bottom: 2px solid #eaf1f9;
+        }}
+        .header h1 {{
+            font-size: 38px; font-weight: 800;
+            background: linear-gradient(135deg, #0f4168 0%, #1f6e9e 100%);
+            background-clip: text; -webkit-background-clip: text; color: transparent;
+            letter-spacing: -0.5px; margin-bottom: 16px;
+        }}
+        .header p {{ color: #3f6a8c; font-size: 38px; font-weight: 500; line-height: 1.4; }}
+        .table-wrapper {{ padding: 0 36px 36px; overflow-x: auto; }}
+        .event-table {{
+            width: 2800px; table-layout: fixed; border-collapse: collapse;
+        }}
+        .event-table th {{
+            padding: 28px 18px; text-align: center; font-weight: 800; font-size: 38px;
+            background: #1a3343; color: #fff; border: none; letter-spacing: 1px;
+        }}
+        .event-table th:first-child {{ border-radius: 32px 0 0 32px; width: 320px; }}
+        .event-table th:not(:first-child) {{ width: 496px; word-wrap: break-word; }}
+        .event-table th:last-child {{ border-radius: 0 32px 32px 0; }}
+        .event-table td:first-child {{
+            font-weight: 800; font-size: 38px; text-align: center; vertical-align: middle;
+            padding: 38px 16px; border-radius: 36px 0 0 36px;
+            line-height: 1.3;
+        }}
+        .event-table td:not(:first-child) {{
+            padding: 26px 16px; vertical-align: middle; line-height: 1.7;
+            font-size: 38px; border: none; word-wrap: break-word;
+        }}
+        .event-table td:last-child {{ border-radius: 0 36px 36px 0; }}
+        .row-china {{ background-color: #FFF0EA; }} .row-china td:first-child {{ background-color: #FFE8E0; }}
+        .row-eurozone {{ background-color: #EBF2FA; }} .row-eurozone td:first-child {{ background-color: #E0EBF7; }}
+        .row-usa {{ background-color: #ECF6EF; }} .row-usa td:first-child {{ background-color: #E2F1E7; }}
+        .row-france {{ background-color: #F2ECFB; }} .row-france td:first-child {{ background-color: #EAE2F7; }}
+        .row-uk {{ background-color: #FEF2E6; }} .row-uk td:first-child {{ background-color: #FDECDC; }}
+        .row-japan {{ background-color: #FFF0EA; }} .row-japan td:first-child {{ background-color: #FFE8E0; }}
+        .row-canada {{ background-color: #F2ECFB; }} .row-canada td:first-child {{ background-color: #EAE2F7; }}
+        .row-intl {{ background-color: #FEF2E6; }} .row-intl td:first-child {{ background-color: #FDECDC; }}
+        .data-row, .events-row {{ display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }}
+        .data-item, .event-item {{
+            display: block; background: rgba(255,255,255,0.7);
+            padding: 18px 32px; border-radius: 80px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); line-height: 1.5;
+        }}
+        .data-item::after, .event-item::after {{ content: ""; display: table; clear: both; }}
+        .data-time, .event-time {{
+            font-weight: 800; color: #116b9e; white-space: nowrap;
+            font-family: '微软雅黑', 'Microsoft YaHei', monospace;
+            float: left; margin-right: 0.5em;
+        }}
+        .data-content, .event-desc {{ font-size: 38px; color: #1a2c3b; }}
+        .empty-cell {{ color: #b8cfe5; font-size: 38px; font-weight: 600; text-align: center; display: block; padding: 12px 0; }}
+        .remarks {{
+            margin: 20px 36px 44px; background: #F8FBFE; border-radius: 48px;
+            padding: 38px 48px; border: 1px solid #e2edf8; font-size: 38px; color: #2b5375;
+        }}
+        .remarks h4 {{ font-size: 38px; font-weight: 800; margin-bottom: 22px; color: #114569; }}
+        .remarks p {{ margin: 18px 0; line-height: 1.65; font-size: 38px; }}
+        .split-hint {{
+            text-align: center; font-size: 38px; color: #2b6a91;
+            background: #f0f6fd; margin: 12px 0 8px; padding: 14px;
+            border-radius: 60px; font-weight: 600;
+        }}
+        .footer-note {{
+            text-align: center; font-size: 38px; color: #2a5f82;
+            padding: 12px; background: #eef3fc; border-radius: 64px;
+        }}
+        @media (max-width: 1800px) {{
+            body {{ padding: 18px 14px; }}
+            .event-table td:not(:first-child) {{ font-size: 32px; padding: 20px 14px; }}
+            .event-table td:first-child {{ font-size: 32px; padding: 28px 12px; }}
+            .event-table th {{ font-size: 32px; padding: 24px 14px; }}
+            .header h1, .header p {{ font-size: 32px; }}
+            .empty-cell {{ font-size: 32px; }}
+            .remarks h4, .remarks p {{ font-size: 32px; }}
+            .split-hint, .footer-note {{ font-size: 32px; }}
+        }}
+        @media print {{
+            body {{ background: white; padding: 0.1in; }}
+            .card {{ box-shadow: none; border: 1px solid #ccc; }}
+            .split-hint {{ display: none; }}
+            .download-btn-container {{ display: none; }}
+        }}
+    </style>
+</head>
+<body>
+<div class="download-btn-container">
+    <button class="download-btn" id="btn-traditional" onclick="downloadTraditional()">📸 保存繁体</button>
+    <button class="download-btn" id="btn-simplified" onclick="downloadSimplified()">📸 保存简体</button>
+</div>
+<div class="schedule-container">
+    <div class="card">
+        <div class="header">
+            <h1>{title}</h1>
+            <p>{subtitle} | {date_range}</p>
+            <p style="font-size: 38px; margin-top: 14px; color: #3f7aa3;">{header_note}</p>
+        </div>
+        <div class="table-wrapper">
+            <table class="event-table">
+                <thead>
+                    <tr>
+                        <th>{col_country}</th>
+                        {header_html}
+                    </tr>
+                </thead>
+                <tbody>
+                    {table_rows}
+                </tbody>
+            </table>
+        </div>
+        <div class="split-hint">{split_hint}</div>
+        <div class="remarks">
+            <h4>{remarks_title}</h4>
+            <p>{remarks_data_source}</p>
+            <p>{remarks_time}</p>
+            <p>{remarks_note1}</p>
+            <p>{remarks_note2}</p>
+            <p>{remarks_note3}</p>
+        </div>
+    </div>
+    <div class="footer-note">{footer_text}</div>
+</div>
+<script>
+async function downloadSimplified() {{
+    const button = document.getElementById('btn-simplified');
+    const originalText = button.textContent;
+    const tableDom = document.querySelector('.event-table');
+    button.textContent = '⏳ 生成中...'; button.disabled = true;
+    try {{
+        const originalStyles = {{
+            position: tableDom.style.position, left: tableDom.style.left,
+            top: tableDom.style.top, zIndex: tableDom.style.zIndex,
+            display: tableDom.style.display, visibility: tableDom.style.visibility
+        }};
+        tableDom.style.position = 'absolute'; tableDom.style.left = '-9999px';
+        tableDom.style.top = '0'; tableDom.style.zIndex = '99999';
+        tableDom.style.display = 'block'; tableDom.style.visibility = 'visible';
+        document.body.appendChild(tableDom);
+        
+        const canvas = await html2canvas(tableDom, {{
+            scale: 2, backgroundColor: '#fff', useCORS: true, allowTaint: true,
+            logging: false, width: 2800, windowWidth: 2800, windowHeight: tableDom.scrollHeight
+        }});
+        
+        tableDom.remove();
+        Object.assign(tableDom.style, originalStyles);
+        const tableWrapper = document.querySelector('.table-wrapper');
+        tableWrapper.appendChild(tableDom);
+        
+        const a = document.createElement('a');
+        a.download = '{data_type}_简体.png';
+        a.href = canvas.toDataURL('image/png', 1.0);
+        a.click();
+        button.textContent = '✅ 下载成功！';
+    }} catch (error) {{
+        console.error('截图失败:', error);
+        button.textContent = '❌ 下载失败';
+    }} finally {{
+        setTimeout(() => {{ button.textContent = originalText; button.disabled = false; }}, 1500);
+    }}
+}}
+async function downloadTraditional() {{
+    const button = document.getElementById('btn-traditional');
+    const originalText = button.textContent;
+    const tableDom = document.querySelector('.event-table');
+    button.textContent = '⏳ 生成中...'; button.disabled = true;
+    try {{
+        const originalStyles = {{
+            position: tableDom.style.position, left: tableDom.style.left,
+            top: tableDom.style.top, zIndex: tableDom.style.zIndex,
+            display: tableDom.style.display, visibility: tableDom.style.visibility
+        }};
+        tableDom.style.position = 'absolute'; tableDom.style.left = '-9999px';
+        tableDom.style.top = '0'; tableDom.style.zIndex = '99999';
+        tableDom.style.display = 'block'; tableDom.style.visibility = 'visible';
+        document.body.appendChild(tableDom);
+        
+        const canvas = await html2canvas(tableDom, {{
+            scale: 2, backgroundColor: '#fff', useCORS: true, allowTaint: true,
+            logging: false, width: 2800, windowWidth: 2800, windowHeight: tableDom.scrollHeight
+        }});
+        
+        tableDom.remove();
+        Object.assign(tableDom.style, originalStyles);
+        const tableWrapper = document.querySelector('.table-wrapper');
+        tableWrapper.appendChild(tableDom);
+        
+        const a = document.createElement('a');
+        a.download = '{data_type}_繁體.png';
+        a.href = canvas.toDataURL('image/png', 1.0);
+        a.click();
+        button.textContent = '✅ 下载成功！';
+    }} catch (error) {{
+        console.error('截图失败:', error);
+        button.textContent = '❌ 下载失败';
+    }} finally {{
+        setTimeout(() => {{ button.textContent = originalText; button.disabled = false; }}, 1500);
+    }}
+}}
+</script>
+</body>
+</html>

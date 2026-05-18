@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>外汇期货数据汇总 | 全篇统一38px · 微软雅黑</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        .download-btn-container {{
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            gap: 16px;
+        }}
+        .download-btn {{
+            background: linear-gradient(135deg, #0f4168 0%, #1f6e9e 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 60px;
+            font-size: 24px;
+            font-family: '微软雅黑', 'Microsoft YaHei', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }}
+        .download-btn:hover {{ transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.25); }}
+        .download-btn:active {{ transform: translateY(0); }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            background: linear-gradient(145deg, #e2e9f2 0%, #d0dce8 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: '微软雅黑', 'Microsoft YaHei', sans-serif;
+            padding: 32px 24px;
+        }}
+        .schedule-container {{ max-width: 1600px; width: 100%; display: flex; flex-direction: column; gap: 48px; }}
+        .card {{
+            background: #ffffff;
+            border-radius: 56px;
+            box-shadow: 0 32px 52px -20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }}
+        .header {{
+            padding: 40px 48px 28px;
+            border-bottom: 2px solid #eaf1f9;
+        }}
+        .header h1 {{
+            font-size: 38px; font-weight: 800;
+            background: linear-gradient(135deg, #0f4168 0%, #1f6e9e 100%);
+            background-clip: text; -webkit-background-clip: text; color: transparent;
+            letter-spacing: -0.3px; margin-bottom: 12px;
+        }}
+        .header p {{ color: #3f6a8c; font-size: 38px; font-weight: 500; line-height: 1.4; }}
+        .table-wrapper {{ padding: 0 36px 36px; overflow-x: auto; }}
+        .data-table {{ width: 100%; border-collapse: collapse; min-width: 1100px; }}
+        .data-table th {{
+            padding: 28px 16px; text-align: center; font-weight: 800; font-size: 38px;
+            background: #1a3343; color: #fff; border: none; letter-spacing: 1px; white-space: nowrap;
+        }}
+        .data-table th:first-child {{ border-radius: 32px 0 0 32px; }}
+        .data-table th:last-child {{ border-radius: 0 32px 32px 0; }}
+        .data-table td:first-child {{
+            font-weight: 800; font-size: 38px; text-align: center; vertical-align: middle;
+            width: 160px; padding: 32px 12px; border: none; border-radius: 36px 0 0 36px;
+            white-space: nowrap;
+        }}
+        .data-table td:not(:first-child) {{
+            padding: 32px 16px; vertical-align: middle; text-align: center;
+            font-size: 38px; font-weight: 600; border: none;
+        }}
+        .data-table td:last-child {{ border-radius: 0 36px 36px 0; }}
+        .positive {{ color: #2a7a4b; font-weight: 800; font-size: 38px; }}
+        .positive::before {{ content: "+"; }}
+        .negative {{ color: #c23d3d; font-weight: 800; font-size: 38px; }}
+        .neutral {{ color: #1f2f3e; font-weight: 700; font-size: 38px; }}
+        .row-eur {{ background-color: #EBF2FA; }} .row-eur td:first-child {{ background-color: #E0EBF7; }}
+        .row-jpy {{ background-color: #FFF0EA; }} .row-jpy td:first-child {{ background-color: #FFE8E0; }}
+        .row-gbp {{ background-color: #ECF6EF; }} .row-gbp td:first-child {{ background-color: #E2F1E7; }}
+        .row-aud {{ background-color: #F2ECFB; }} .row-aud td:first-child {{ background-color: #EAE2F7; }}
+        .row-cad {{ background-color: #FEF2E6; }} .row-cad td:first-child {{ background-color: #FDECDC; }}
+        .row-chf {{ background-color: #E8F7F7; }} .row-chf td:first-child {{ background-color: #DCF2F2; }}
+        .row-nzd {{ background-color: #FFF8E8; }} .row-nzd td:first-child {{ background-color: #FFF2DC; }}
+        .row-cny {{ background-color: #FEE8E8; }} .row-cny td:first-child {{ background-color: #FCDCDC; }}
+        .remarks {{
+            margin: 20px 36px 44px; background: #F8FBFE; border-radius: 48px;
+            padding: 32px 42px; border: 1px solid #e2edf8; color: #2b5375;
+        }}
+        .remarks h4 {{ font-size: 38px; font-weight: 800; margin-bottom: 20px; color: #114569; }}
+        .remarks p {{ margin: 16px 0; line-height: 1.6; font-size: 38px; }}
+        .remarks p span {{ font-size: 38px; }}
+        .split-hint {{
+            text-align: center; font-size: 38px; color: #2b6a91;
+            background: #f0f6fd; margin: 12px 0 8px; padding: 16px 20px;
+            border-radius: 60px; font-weight: 600;
+        }}
+        .footer-note {{
+            text-align: center; font-size: 38px; color: #2a5f82;
+            padding: 16px; background: #eef3fc; border-radius: 64px;
+        }}
+        @media (max-width: 1400px) {{
+            .data-table td:not(:first-child) {{ font-size: 32px; padding: 26px 12px; }}
+            .positive, .negative, .neutral {{ font-size: 32px; }}
+            .data-table td:first-child {{ font-size: 32px; padding: 28px 10px; white-space: nowrap; }}
+            .data-table th {{ font-size: 32px; padding: 24px 12px; }}
+            .header h1, .header p {{ font-size: 32px; }}
+            .remarks h4, .remarks p {{ font-size: 32px; }}
+            .split-hint, .footer-note {{ font-size: 32px; }}
+        }}
+        @media print {{
+            body {{ background: white; padding: 0.1in; }}
+            .card {{ box-shadow: none; border: 1px solid #ccc; }}
+            .split-hint {{ display: none; }}
+            .download-btn-container {{ display: none; }}
+        }}
+    </style>
+</head>
+<body>
+<div class="download-btn-container">
+    <button class="download-btn" id="btn-traditional" onclick="downloadTraditional()">📸 保存繁体</button>
+    <button class="download-btn" id="btn-simplified" onclick="downloadSimplified()">📸 保存简体</button>
+</div>
+<div class="schedule-container">
+    <div class="card">
+        <div class="header">
+            <h1>{title}</h1>
+            <p>{subtitle}{expiry_month}</p>
+            <p style="font-size: 38px; margin-top: 12px; color: #3f7aa3;">{header_note}</p>
+        </div>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr><th>{col_currency}</th><th>{col_future_code}</th><th>{col_expiry_month}</th><th>{col_latest}</th><th>{col_weekly}</th><th>{col_monthly}</th></tr>
+                </thead>
+                <tbody>
+                    {table_rows}
+                </tbody>
+            </table>
+        </div>
+        <div class="split-hint">📸 多图分段指南：如需截取多张图片，可从此处分割，上下两部分各取所需，大字体完整保留。</div>
+        <div class="remarks">
+            <h4>{remarks_title}</h4>
+            <p>{remarks_data_source}</p>
+            <p>{remarks_expiry} {expiry_month}，已在表格中统一标注。</p>
+            <p>{remarks_color}</p>
+            <p>{remarks_latest}</p>
+            <p>{remarks_note1}</p>
+            <p>{remarks_note2}</p>
+        </div>
+    </div>
+    <div class="footer-note">{footer_text}</div>
+</div>
+<script>
+async function downloadSimplified() {{
+    const button = document.getElementById('btn-simplified');
+    const originalText = button.textContent;
+    button.textContent = '⏳ 生成中...'; button.disabled = true;
+    try {{
+        const tableWrappers = document.querySelectorAll('.table-wrapper');
+        const cardElement = tableWrappers[0];
+        const canvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false }});
+        const link = document.createElement('a');
+        link.download = 'forex_trend_summary_simplified.png';
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+        button.textContent = '✅ 下载成功！';
+    }} catch (error) {{ button.textContent = '❌ 下载失败'; }}
+    setTimeout(() => {{ button.textContent = originalText; button.disabled = false; }}, 1500);
+}}
+async function downloadTraditional() {{
+    const button = document.getElementById('btn-traditional');
+    const originalText = button.textContent;
+    button.textContent = '⏳ 生成中...'; button.disabled = true;
+    try {{
+        const tableWrappers = document.querySelectorAll('.table-wrapper');
+        const cardElement = tableWrappers[0];
+        const canvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false }});
+        const link = document.createElement('a');
+        link.download = 'forex_trend_summary_traditional.png';
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+        button.textContent = '✅ 下载成功！';
+    }} catch (error) {{ button.textContent = '❌ 下载失败'; }}
+    setTimeout(() => {{ button.textContent = originalText; button.disabled = false; }}, 1500);
+}}
+</script>
+</body>
+</html>
