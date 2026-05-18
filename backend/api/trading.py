@@ -90,31 +90,69 @@ def get_cloudhands_forex_trend_summary():
 
 @trading_bp.route('/cloudhands/forex/position_data')
 def get_cloudhands_forex_position_data():
-    """ 获取ForexPositionData部分的数据 """
-    # 解析参数
+    """
+    获取外汇头寸持仓数据（CFTC持仓报告）
+    
+    获取CFTC期货持仓数据，生成持仓图表图片，并返回数据列表和图片信息。
+    
+    Request参数:
+        week_start (str): 周报起始日期，格式 'YYYY-MM-DD' 或 'YYYY-M-D'
+    
+    Response:
+        data_lst: 持仓数据列表（字典格式）
+        data_path: 原始数据文件路径
+        picture_name: 生成的图表图片文件名
+        text: 持仓数据摘要文本
+    
+    调用的Service方法:
+        CloudhandsWeeklyReport.generate_forex_position_data()
+    """
     week_start = request.args['week_start']
-    # 获取数据
     data_lst = CloudhandsWeeklyReport(week_start).generate_forex_position_data()
     resp = WebResponse.success('获取数据成功！', data=data_lst)
     return resp
 
 @trading_bp.route('/cloudhands/forex/major_currency_forecast')
 def get_cloudhands_major_currency_forecast():
-    """ 获取 Major_Currency_Forecast 部分的数据 """
-    # 解析参数
+    """
+    获取重点货币对展望数据
+    
+    获取主要货币对的分析预测数据，返回包含各货币对分析内容的字典。
+    
+    Request参数:
+        week_start (str): 周报起始日期，格式 'YYYY-MM-DD' 或 'YYYY-M-D'
+    
+    Response:
+        analysis_dict: 货币对分析字典，包含各主要货币对的展望分析
+    
+    调用的Service方法:
+        CloudhandsWeeklyReport.generate_major_currency_forecast()
+    """
     week_start = request.args['week_start']
-    # 获取数据
     data_lst = CloudhandsWeeklyReport(week_start).generate_major_currency_forecast()
     resp = WebResponse.success('获取数据成功！', data=data_lst)
     return resp
 
 @trading_bp.route('/cloudhands/forex/future_data_event')
 def get_cloudhands_forex_future_data_event():
-    """ 获取Forex_Future_Data_Event部分的数据 """
-    # 解析参数
+    """
+    获取财经数据和事件日历数据
+    
+    获取指定类型的财经数据或事件日历，生成对应的表格图片，并返回数据列表和图片信息。
+    
+    Request参数:
+        data_type (str): 数据类型，可选值 'DATA'（财经数据）或 'EVENT'（事件日历）
+        week_start (str): 周报起始日期，格式 'YYYY-MM-DD' 或 'YYYY-M-D'
+    
+    Response:
+        data_json_lst: 数据列表（字典格式）
+        image_name: 生成的表格图片文件名
+    
+    调用的Service方法:
+        CloudhandsWeeklyReport.generate_forex_future_data_event(data_type)
+    """
     data_type = request.args['data_type']
     week_start = request.args['week_start']
-    # 获取数据
     res = CloudhandsWeeklyReport(week_start).generate_forex_future_data_event(data_type)
     resp = WebResponse.success('获取数据成功！', data=res)
     return resp
