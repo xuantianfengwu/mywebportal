@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# 设置 Matplotlib 使用非交互式后端，避免 macOS 多线程问题
+import matplotlib
+matplotlib.use('Agg')
+
 import flask
 from flask import Flask, render_template, Response
 import os
